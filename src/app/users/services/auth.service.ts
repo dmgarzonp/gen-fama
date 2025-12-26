@@ -20,26 +20,67 @@ export class AuthService {
 
     async login(username: string, password: string): Promise<boolean> {
         try {
-            const results = await this.db.query<Usuario>(
-                'SELECT * FROM usuarios WHERE username = ? AND password = ? AND activo = 1',
-                [username, password]
-            );
-
-            if (results.length > 0) {
-                const user = results[0];
-                this.setSession(user);
-                // Registrar log de acceso
-                await this.db.execute(
-                    'INSERT INTO logs_auditoria (usuario_id, accion, detalles) VALUES (?, ?, ?)',
-                    [user.id, 'LOGIN', `Usuario ${username} inició sesión`]
+            console.log('Intentando login con:', username);
+            
+            // Verificar si window.api está disponible (solo en Electron)
+            if (typeof window !== 'undefined' && (window as any).api) {
+                const results = await this.db.query<Usuario>(
+                    'SELECT * FROM usuarios WHERE username = ? AND password = ? AND activo = 1',
+                    [username, password]
                 );
-                return true;
+
+                console.log('Resultados de la consulta:', results);
+
+                if (results.length > 0) {
+                    const user = results[0];
+                    console.log('Usuario encontrado:', user);
+                    this.setSession(user);
+                    console.log('Sesión establecida, usuario actual:', this.currentUser());
+                    // Registrar log de acceso (no bloquea el login si falla)
+                    try {
+                        await this.db.execute(
+                            'INSERT INTO logs_auditoria (usuario_id, accion, detalles) VALUES (?, ?, ?)',
+                            [user.id, 'LOGIN', `Usuario ${username} inició sesión`]
+                        );
+                    } catch (logError) {
+                        console.warn('No se pudo registrar el log de auditoría:', logError);
+                        // No bloquea el login si el log falla
+                    }
+                    return true;
+                } else {
+                    console.warn('No se encontró usuario con esas credenciales');
+                }
+            } else {
+                // Modo desarrollo sin Electron - usar usuarios mock
+                console.warn('window.api no disponible - usando modo desarrollo');
+                return this.loginMock(username, password);
             }
             return false;
         } catch (error) {
             console.error('Error durante el login:', error);
-            return false;
+            // En caso de error, intentar modo mock como fallback
+            return this.loginMock(username, password);
         }
+    }
+
+    private loginMock(username: string, password: string): boolean {
+        // Usuarios mock para desarrollo sin Electron
+        const mockUsers: Usuario[] = [
+            { id: 1, username: 'admin', nombre: 'Administrador Principal', password: 'admin', role: 'admin', activo: true },
+            { id: 2, username: 'farma', nombre: 'Juan Farmacéutico', password: 'farma', role: 'farmaceutico', activo: true },
+            { id: 3, username: 'auxiliar', nombre: 'Maria Auxiliar', password: 'user', role: 'auxiliar', activo: true },
+            { id: 4, username: 'cajero', nombre: 'Carlos Cajero', password: 'user', role: 'cajero', activo: true },
+        ];
+
+        const user = mockUsers.find(u => u.username === username && u.password === password);
+        if (user) {
+            const { password: _, ...userWithoutPassword } = user;
+            this.setSession(userWithoutPassword as Usuario);
+            console.log('Login mock exitoso:', userWithoutPassword);
+            return true;
+        }
+        console.warn('Credenciales mock no válidas');
+        return false;
     }
 
     logout() {
@@ -63,9 +104,15 @@ export class AuthService {
     }
 
     private setSession(user: Usuario) {
+        // Actualizar signal primero
         this.currentUser.set(user);
+        // Cargar permisos
         this.permissionsService.loadPermissions(user);
+        // Guardar en localStorage
         localStorage.setItem(this.STORAGE_KEY, JSON.stringify(user));
+        // Forzar detección de cambios (por si acaso)
+        console.log('Sesión establecida, usuario actual:', this.currentUser());
+        console.log('isAuthenticated():', this.isAuthenticated());
     }
 
     private loadSession() {

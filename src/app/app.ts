@@ -41,10 +41,19 @@ export class App {
 
   private async initDatabase() {
     try {
-      await this.dbSchema.initSchema();
-      await this.dbSeeder.seedData();
+      // Verificar si window.api está disponible (solo en Electron)
+      if (typeof window !== 'undefined' && (window as any).api) {
+        console.log('Inicializando base de datos (modo Electron)...');
+        await this.dbSchema.initSchema();
+        await this.dbSeeder.seedData();
+        console.log('Base de datos inicializada correctamente');
+      } else {
+        console.warn('window.api no disponible - modo desarrollo sin Electron');
+        console.warn('La aplicación funcionará en modo mock (sin persistencia)');
+      }
     } catch (error) {
       console.error('Error al inicializar la base de datos:', error);
+      console.warn('Continuando en modo desarrollo sin base de datos');
     }
   }
 

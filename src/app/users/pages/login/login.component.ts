@@ -95,11 +95,46 @@ export class LoginComponent {
         e.preventDefault();
         this.error.set(null);
 
-        const success = await this.authService.login(this.username, this.password);
-        if (success) {
-            this.router.navigate(['/dashboard']);
-        } else {
-            this.error.set('Usuario o contraseña incorrectos');
+        if (!this.username || !this.password) {
+            this.error.set('Por favor ingresa usuario y contraseña');
+            return;
+        }
+
+        try {
+            const success = await this.authService.login(this.username, this.password);
+            if (success) {
+                console.log('Login exitoso, redirigiendo a dashboard...');
+                console.log('Usuario autenticado:', this.authService.isAuthenticated());
+                
+                // Pequeño delay para asegurar que el signal se propague
+                setTimeout(() => {
+                    console.log('Intentando navegar después del delay...');
+                    console.log('Usuario autenticado (después delay):', this.authService.isAuthenticated());
+                    
+                    this.router.navigateByUrl('/dashboard').then(
+                        (navigated) => {
+                            if (navigated) {
+                                console.log('Navegación exitosa a dashboard');
+                            } else {
+                                console.error('No se pudo navegar a dashboard');
+                                // Intentar navegar a la raíz
+                                this.router.navigate(['/']).then(() => {
+                                    console.log('Redirigido a raíz');
+                                });
+                            }
+                        }
+                    ).catch((err) => {
+                        console.error('Error al navegar:', err);
+                        // Fallback: intentar navegar a raíz
+                        this.router.navigate(['/']);
+                    });
+                }, 100);
+            } else {
+                this.error.set('Usuario o contraseña incorrectos');
+            }
+        } catch (error) {
+            console.error('Error en el login:', error);
+            this.error.set('Error al conectar con la base de datos. Verifica la consola para más detalles.');
         }
     }
 }

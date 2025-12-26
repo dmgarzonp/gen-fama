@@ -1,0 +1,199 @@
+<div class="p-6">
+    <!-- Header -->
+    <div class="mb-6">
+        <div class="flex items-center justify-between mb-4">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">Órdenes de Compra</h1>
+                <p class="text-gray-600 mt-1">Gestiona las órdenes de compra a proveedores</p>
+            </div>
+            <a routerLink="/compras/ordenes/nueva"
+                class="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors flex items-center gap-2">
+                <lucide-icon name="plus" [size]="20"></lucide-icon>
+                Nueva Orden
+            </a>
+        </div>
+
+        <!-- Estadísticas -->
+        <div class="grid grid-cols-2 md:grid-cols-6 gap-4">
+            <div class="bg-white p-4 rounded-lg border border-gray-200">
+                <p class="text-sm text-gray-600">Total</p>
+                <p class="text-2xl font-bold text-gray-900">{{ estadisticas().total }}</p>
+            </div>
+            <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <p class="text-sm text-gray-600">Borradores</p>
+                <p class="text-2xl font-bold text-gray-700">{{ estadisticas().borrador }}</p>
+            </div>
+            <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                <p class="text-sm text-blue-600">Enviadas</p>
+                <p class="text-2xl font-bold text-blue-700">{{ estadisticas().enviada }}</p>
+            </div>
+            <div class="bg-purple-50 p-4 rounded-lg border border-purple-200">
+                <p class="text-sm text-purple-600">Confirmadas</p>
+                <p class="text-2xl font-bold text-purple-700">{{ estadisticas().confirmada }}</p>
+            </div>
+            <div class="bg-emerald-50 p-4 rounded-lg border border-emerald-200">
+                <p class="text-sm text-emerald-600">Recibidas</p>
+                <p class="text-2xl font-bold text-emerald-700">{{ estadisticas().recibida }}</p>
+            </div>
+            <div class="bg-red-50 p-4 rounded-lg border border-red-200">
+                <p class="text-sm text-red-600">Canceladas</p>
+                <p class="text-2xl font-bold text-red-700">{{ estadisticas().cancelada }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="bg-white rounded-lg border border-gray-200 p-4 mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <!-- Búsqueda -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Buscar</label>
+                <div class="relative">
+                    <lucide-icon name="search" [size]="20"
+                        class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></lucide-icon>
+                    <input type="text" [(ngModel)]="terminoBusqueda" placeholder="Nº orden o proveedor..."
+                        class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500" />
+                </div>
+            </div>
+
+            <!-- Filtro por estado -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Estado</label>
+                <select [(ngModel)]="estadoFiltro"
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
+                    <option value="todas">Todas</option>
+                    <option value="borrador">Borrador</option>
+                    <option value="enviada">Enviada</option>
+                    <option value="confirmada">Confirmada</option>
+                    <option value="recibida">Recibida</option>
+                    <option value="cancelada">Cancelada</option>
+                </select>
+            </div>
+
+            <!-- Filtro por proveedor -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Proveedor</label>
+                <select [(ngModel)]="proveedorFiltro"
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
+                    <option [ngValue]="null">Todos</option>
+                    <option *ngFor="let proveedor of proveedores()" [ngValue]="proveedor.id">
+                        {{ proveedor.nombre }}
+                    </option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabla de órdenes -->
+    <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-gray-50 border-b border-gray-200">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Nº Orden
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Proveedor
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Fecha
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Total
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Estado
+                        </th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Acciones
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                    @if (ordenesFiltradas().length === 0) {
+                    <tr>
+                        <td colspan="6" class="px-6 py-12 text-center text-gray-500">
+                            <lucide-icon name="package-x" [size]="48" class="mx-auto mb-3 text-gray-400"></lucide-icon>
+                            <p class="text-lg font-medium">No hay órdenes de compra</p>
+                            <p class="text-sm mt-1">Crea tu primera orden para comenzar</p>
+                        </td>
+                    </tr>
+                    }
+                    @for (orden of ordenesFiltradas(); track orden.id) {
+                    <tr class="hover:bg-gray-50 transition-colors">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center gap-2">
+                                <lucide-icon [name]="getEstadoIcon(orden.estado)" [size]="16"
+                                    class="text-gray-400"></lucide-icon>
+                                <span class="font-medium text-gray-900">{{ orden.numero_orden }}</span>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="text-gray-900">{{ orden.proveedor_nombre }}</span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                            {{ orden.fecha_creacion | date: 'dd/MM/yyyy' }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="font-semibold text-gray-900">${{ orden.total | number: '1.2-2' }}</span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="px-3 py-1 text-xs font-medium rounded-full border"
+                                [ngClass]="getEstadoClass(orden.estado)">
+                                {{ orden.estado | titlecase }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <div class="flex items-center justify-end gap-2">
+                                <!-- Ver detalle -->
+                                <a [routerLink]="['/compras/ordenes', orden.id]"
+                                    class="text-emerald-600 hover:text-emerald-900 p-1 rounded hover:bg-emerald-50"
+                                    title="Ver detalle">
+                                    <lucide-icon name="eye" [size]="18"></lucide-icon>
+                                </a>
+
+                                <!-- Editar (solo borradores) -->
+                                @if (orden.estado === 'borrador') {
+                                <a [routerLink]="['/compras/ordenes', orden.id, 'editar']"
+                                    class="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50"
+                                    title="Editar">
+                                    <lucide-icon name="edit" [size]="18"></lucide-icon>
+                                </a>
+                                }
+
+                                <!-- Recepcionar (solo enviadas/confirmadas) -->
+                                @if (orden.estado === 'enviada' || orden.estado === 'confirmada') {
+                                <a [routerLink]="['/compras/ordenes', orden.id, 'recepcionar']"
+                                    class="text-purple-600 hover:text-purple-900 p-1 rounded hover:bg-purple-50"
+                                    title="Recepcionar">
+                                    <lucide-icon name="package-check" [size]="18"></lucide-icon>
+                                </a>
+                                }
+
+                                <!-- Cancelar (no recibidas ni canceladas) -->
+                                @if (orden.estado !== 'recibida' && orden.estado !== 'cancelada') {
+                                <button (click)="cancelarOrden(orden)"
+                                    class="text-orange-600 hover:text-orange-900 p-1 rounded hover:bg-orange-50"
+                                    title="Cancelar orden">
+                                    <lucide-icon name="x-circle" [size]="18"></lucide-icon>
+                                </button>
+                                }
+
+                                <!-- Eliminar (solo borradores) -->
+                                @if (orden.estado === 'borrador') {
+                                <button (click)="eliminarOrden(orden)"
+                                    class="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50"
+                                    title="Eliminar">
+                                    <lucide-icon name="trash-2" [size]="18"></lucide-icon>
+                                </button>
+                                }
+                            </div>
+                        </td>
+                    </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

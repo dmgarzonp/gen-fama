@@ -1,0 +1,145 @@
+<div class="space-y-6">
+  <div class="flex flex-col gap-1">
+    <div class="flex items-center gap-2">
+      <lucide-icon name="wallet" class="w-5 h-5 text-emerald-600"></lucide-icon>
+      <h2 class="text-xl font-semibold tracking-tight text-gray-900">Caja</h2>
+    </div>
+    <p class="text-sm text-gray-600">Control y seguimiento de la caja diaria.</p>
+  </div>
+
+  <!-- Estado Actual del Turno -->
+  <div class="bg-white rounded-xl border border-gray-200 p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-lg font-semibold text-gray-900">Estado del Turno</h3>
+      <span [class]="'px-3 py-1 rounded-full text-xs font-medium ' + 
+        (turnoActual?.estado === 'abierto' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800')">
+        {{ turnoActual?.estado === 'abierto' ? 'Turno Abierto' : 'Sin turno activo' }}
+      </span>
+    </div>
+
+    <div *ngIf="!turnoActual" class="text-center py-8">
+      <lucide-icon name="wallet" class="w-12 h-12 text-gray-400 mx-auto mb-4"></lucide-icon>
+      <h4 class="text-lg font-medium text-gray-900 mb-2">Abrir Turno</h4>
+      <p class="text-sm text-gray-600 mb-4">Inicia un nuevo turno de caja para comenzar a operar</p>
+      <button (click)="abrirTurno()" class="bg-emerald-600 text-white hover:bg-emerald-700 transition-colors rounded-lg px-6 py-2 text-sm font-medium">
+        <lucide-icon name="play" class="w-4 h-4 inline mr-2"></lucide-icon>
+        Abrir Turno
+      </button>
+    </div>
+
+    <div *ngIf="turnoActual" class="space-y-4">
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div>
+          <p class="text-xs text-gray-500 uppercase">Usuario</p>
+          <p class="text-sm font-medium text-gray-900">{{ turnoActual.usuario }}</p>
+        </div>
+        <div>
+          <p class="text-xs text-gray-500 uppercase">Apertura</p>
+          <p class="text-sm font-medium text-gray-900">{{ turnoActual.horaApertura | date:'shortTime' }}</p>
+        </div>
+        <div>
+          <p class="text-xs text-gray-500 uppercase">Monto Inicial</p>
+          <p class="text-sm font-medium text-gray-900">${{ turnoActual.montoInicial.toLocaleString() }}</p>
+        </div>
+        <div>
+          <p class="text-xs text-gray-500 uppercase">Ventas</p>
+          <p class="text-sm font-medium text-emerald-600">${{ turnoActual.ventas.toLocaleString() }}</p>
+        </div>
+      </div>
+
+      <div class="flex gap-2 pt-4 border-t">
+        <button (click)="realizarArqueo()" class="bg-blue-600 text-white hover:bg-blue-700 transition-colors rounded-lg px-4 py-2 text-sm font-medium">
+          <lucide-icon name="calculator" class="w-4 h-4 inline mr-2"></lucide-icon>
+          Arqueo Parcial
+        </button>
+        <button (click)="registrarIngreso()" class="bg-green-600 text-white hover:bg-green-700 transition-colors rounded-lg px-4 py-2 text-sm font-medium">
+          <lucide-icon name="plus" class="w-4 h-4 inline mr-2"></lucide-icon>
+          Ingreso
+        </button>
+        <button (click)="registrarEgreso()" class="bg-red-600 text-white hover:bg-red-700 transition-colors rounded-lg px-4 py-2 text-sm font-medium">
+          <lucide-icon name="minus" class="w-4 h-4 inline mr-2"></lucide-icon>
+          Egreso
+        </button>
+        <button (click)="cerrarTurno()" class="bg-gray-600 text-white hover:bg-gray-700 transition-colors rounded-lg px-4 py-2 text-sm font-medium ml-auto">
+          <lucide-icon name="power" class="w-4 h-4 inline mr-2"></lucide-icon>
+          Cerrar Turno
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Movimientos del Turno -->
+  <div *ngIf="turnoActual" class="bg-white rounded-xl border border-gray-200 p-6">
+    <h3 class="text-lg font-semibold text-gray-900 mb-4">Movimientos del Turno</h3>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b">
+            <th class="text-left py-2 px-2 font-medium text-gray-700">Hora</th>
+            <th class="text-left py-2 px-2 font-medium text-gray-700">Tipo</th>
+            <th class="text-left py-2 px-2 font-medium text-gray-700">Descripción</th>
+            <th class="text-right py-2 px-2 font-medium text-gray-700">Monto</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let mov of movimientos" class="border-b hover:bg-gray-50">
+            <td class="py-2 px-2">{{ mov.hora | date:'shortTime' }}</td>
+            <td class="py-2 px-2">
+              <span [class]="'px-2 py-1 rounded text-xs font-medium ' +
+                (mov.tipo === 'venta' ? 'bg-emerald-100 text-emerald-800' : 
+                 mov.tipo === 'ingreso' ? 'bg-green-100 text-green-800' : 
+                 'bg-red-100 text-red-800')">
+                {{ mov.tipo === 'venta' ? 'Venta' : mov.tipo === 'ingreso' ? 'Ingreso' : 'Egreso' }}
+              </span>
+            </td>
+            <td class="py-2 px-2">{{ mov.descripcion }}</td>
+            <td class="py-2 px-2 text-right font-medium">
+              <span [class]="mov.tipo === 'egreso' ? 'text-red-600' : 'text-emerald-600'">
+                {{ mov.tipo === 'egreso' ? '-' : '+' }}${{ mov.monto.toLocaleString() }}
+              </span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Historial de Turnos -->
+  <div class="bg-white rounded-xl border border-gray-200 p-6">
+    <h3 class="text-lg font-semibold text-gray-900 mb-4">Historial de Turnos</h3>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b">
+            <th class="text-left py-2 px-2 font-medium text-gray-700">Fecha</th>
+            <th class="text-left py-2 px-2 font-medium text-gray-700">Usuario</th>
+            <th class="text-right py-2 px-2 font-medium text-gray-700">Inicial</th>
+            <th class="text-right py-2 px-2 font-medium text-gray-700">Final</th>
+            <th class="text-right py-2 px-2 font-medium text-gray-700">Ventas</th>
+            <th class="text-right py-2 px-2 font-medium text-gray-700">Diferencia</th>
+            <th class="text-center py-2 px-2 font-medium text-gray-700">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let turno of historialTurnos" class="border-b hover:bg-gray-50">
+            <td class="py-2 px-2">{{ turno.horaApertura | date:'shortDate' }}</td>
+            <td class="py-2 px-2">{{ turno.usuario }}</td>
+            <td class="py-2 px-2 text-right">${{ turno.montoInicial.toLocaleString() }}</td>
+            <td class="py-2 px-2 text-right">${{ turno.montoFinal?.toLocaleString() || '-' }}</td>
+            <td class="py-2 px-2 text-right">${{ turno.ventas.toLocaleString() }}</td>
+            <td class="py-2 px-2 text-right">
+              <span [class]="getDiferenciaColor(turno)">
+                ${{ getDiferencia(turno).toLocaleString() }}
+              </span>
+            </td>
+            <td class="py-2 px-2 text-center">
+              <button (click)="verReporteTurno(turno)" class="text-blue-600 hover:text-blue-800 text-xs font-medium">
+                Ver Reporte
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

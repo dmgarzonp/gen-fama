@@ -1,0 +1,189 @@
+<div class="p-6 max-w-6xl mx-auto">
+    @if (orden(); as orden) {
+    <!-- Header -->
+    <div class="mb-6">
+        <div class="flex items-center justify-between mb-4">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">Recepción de Mercancía</h1>
+                <p class="text-gray-600 mt-1">Orden: {{ orden.numero_orden }} - {{ orden.proveedor_nombre }}</p>
+            </div>
+            <a [routerLink]="['/compras/ordenes', orden.id]"
+                class="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2">
+                <lucide-icon name="arrow-left" [size]="20"></lucide-icon>
+                Volver
+            </a>
+        </div>
+
+        <!-- Alertas de Diferencias -->
+        @if (tieneDiferencias()) {
+        <div class="p-4 bg-orange-50 rounded-lg border border-orange-200">
+            <div class="flex items-start gap-3">
+                <lucide-icon name="alert-triangle" [size]="24" class="text-orange-600 mt-0.5"></lucide-icon>
+                <div class="flex-1">
+                    <h3 class="font-semibold text-orange-900 mb-2">Diferencias Detectadas ({{ diferencias().length }})
+                    </h3>
+                    <ul class="text-sm text-orange-800 space-y-1">
+                        @for (dif of diferencias(); track $index) {
+                        <li>
+                            • <strong>{{ dif.nombre_producto }}</strong>:
+                            {{ dif.tipo }} de {{ dif.diferencia }} unidades
+                            (Esperado: {{ dif.cantidad_esperada }}, Recibido: {{ dif.cantidad_recibida }})
+                        </li>
+                        }
+                    </ul>
+                </div>
+            </div>
+        </div>
+        }
+    </div>
+
+    <!-- Formulario -->
+    <div class="space-y-6">
+        <!-- Información General -->
+        <div class="bg-white rounded-lg border border-gray-200 p-6">
+            <h2 class="text-lg font-semibold text-gray-900 mb-4">Información General</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Recibido por</label>
+                    <input type="text" [(ngModel)]="recibido_por"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
+                        required />
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Fecha de Recepción</label>
+                    <input type="text" [value]="fechaActual | date: 'dd/MM/yyyy HH:mm'" disabled
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50" />
+                </div>
+            </div>
+        </div>
+
+        <!-- Productos -->
+        @for (item of itemsRecepcion(); track $index) {
+        <div class="bg-white rounded-lg border border-gray-200 p-6">
+            <div class="flex items-start justify-between mb-4">
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-900">{{ item.nombre_producto }}</h3>
+                    <p class="text-sm text-gray-600">Cantidad esperada: {{ item.cantidad_esperada }} unidades</p>
+                </div>
+                @if (item.cantidad_recibida !== item.cantidad_esperada) {
+                <span class="px-3 py-1 bg-orange-100 text-orange-800 text-sm font-medium rounded-full">
+                    Diferencia
+                </span>
+                }
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Cantidad Recibida</label>
+                    <input type="number" [ngModel]="item.cantidad_recibida"
+                        (ngModelChange)="actualizarCantidadRecibida($index, $event)" min="0"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500" />
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Estado del Producto</label>
+                    <select [ngModel]="item.estado_producto" (ngModelChange)="actualizarEstado($index, $event)"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500">
+                        <option value="bueno">✅ Bueno</option>
+                        <option value="dañado">⚠️ Dañado</option>
+                        <option value="vencido">❌ Vencido</option>
+                    </select>
+                </div>
+            </div>
+
+            @if (item.cantidad_recibida > 0 && item.estado_producto === 'bueno') {
+            <div class="border-t border-gray-200 pt-4">
+                <div class="flex items-center justify-between mb-3">
+                    <h4 class="font-semibold text-gray-900">
+                        Lotes
+                        <span class="text-sm font-normal text-gray-600">
+                            (Total: {{ getTotalLotes(item) }} / {{ item.cantidad_recibida }})
+                        </span>
+                    </h4>
+                    <button (click)="agregarLote($index)"
+                        class="px-3 py-1.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm flex items-center gap-2">
+                        <lucide-icon name="plus" [size]="16"></lucide-icon>
+                        Agregar Lote
+                    </button>
+                </div>
+
+                @if (item.lotes.length === 0) {
+                <div class="p-4 bg-yellow-50 rounded-lg border border-yellow-200 text-center">
+                    <p class="text-sm text-yellow-800">⚠️ Debe agregar al menos un lote</p>
+                </div>
+                }
+
+                @for (lote of item.lotes; track $index) {
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-3 mb-3 p-3 bg-gray-50 rounded-lg">
+                    <div class="md:col-span-3">
+                        <label class="block text-xs font-medium text-gray-700 mb-1">Nº Lote</label>
+                        <input type="text" [ngModel]="lote.numero_lote"
+                            (ngModelChange)="actualizarLote($index, $index, 'numero_lote', $event)"
+                            placeholder="L2024001" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                            required />
+                    </div>
+                    <div class="md:col-span-3">
+                        <label class="block text-xs font-medium text-gray-700 mb-1">Vencimiento</label>
+                        <input type="date" [ngModel]="lote.fecha_vencimiento | date: 'yyyy-MM-dd'"
+                            (ngModelChange)="actualizarLote($index, $index, 'fecha_vencimiento', $event)"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" required />
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-xs font-medium text-gray-700 mb-1">Cantidad</label>
+                        <input type="number" [ngModel]="lote.cantidad"
+                            (ngModelChange)="actualizarLote($index, $index, 'cantidad', $event)" min="1"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" required />
+                    </div>
+                    <div class="md:col-span-3">
+                        <label class="block text-xs font-medium text-gray-700 mb-1">Ubicación</label>
+                        <input type="text" [ngModel]="lote.ubicacion_almacen"
+                            (ngModelChange)="actualizarLote($index, $index, 'ubicacion_almacen', $event)"
+                            placeholder="A1-B2" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                            required />
+                    </div>
+                    <div class="md:col-span-1 flex items-end">
+                        <button (click)="eliminarLote($index, $index)"
+                            class="w-full px-2 py-2 text-red-600 hover:bg-red-50 rounded-lg">
+                            <lucide-icon name="trash-2" [size]="18"></lucide-icon>
+                        </button>
+                    </div>
+                </div>
+                }
+
+                @if (!validarLotes(item) && item.lotes.length > 0) {
+                <div class="p-3 bg-red-50 rounded-lg border border-red-200 text-sm text-red-800">
+                    ⚠️ La suma de lotes ({{ getTotalLotes(item) }}) debe ser igual a la cantidad recibida ({{
+                    item.cantidad_recibida }})
+                </div>
+                }
+            </div>
+            }
+        </div>
+        }
+
+        <!-- Observaciones -->
+        <div class="bg-white rounded-lg border border-gray-200 p-6">
+            <h2 class="text-lg font-semibold text-gray-900 mb-4">Observaciones</h2>
+            <textarea [(ngModel)]="observaciones" rows="3"
+                placeholder="Notas sobre la recepción, diferencias encontradas, etc..."
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"></textarea>
+        </div>
+
+        <!-- Botones de Acción -->
+        <div class="flex items-center justify-end gap-3">
+            <button (click)="cancelar()"
+                class="px-6 py-3 bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium">
+                Cancelar
+            </button>
+            <button (click)="registrarRecepcion()"
+                class="px-6 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium flex items-center gap-2">
+                <lucide-icon name="package-check" [size]="20"></lucide-icon>
+                Registrar Recepción y Actualizar Inventario
+            </button>
+        </div>
+    </div>
+    } @else {
+    <div class="text-center py-12">
+        <p class="text-gray-500">Cargando orden...</p>
+    </div>
+    }
+</div>

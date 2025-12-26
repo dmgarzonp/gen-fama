@@ -1,0 +1,297 @@
+<div class="p-6 max-w-6xl mx-auto">
+    <!-- Header -->
+    <div class="mb-6">
+        <div class="flex items-center justify-between mb-4">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">
+                    {{ modoEdicion() ? 'Editar Orden de Compra' : 'Nueva Orden de Compra' }}
+                </h1>
+                <p class="text-gray-600 mt-1">Complete los datos de la orden</p>
+            </div>
+            <a routerLink="/compras/ordenes"
+                class="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2">
+                <lucide-icon name="arrow-left" [size]="20"></lucide-icon>
+                Volver
+            </a>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Formulario Principal -->
+        <div class="lg:col-span-2 space-y-6">
+            <!-- Información del Proveedor -->
+            <div class="bg-white rounded-lg border border-gray-200 p-6">
+                <h2 class="text-lg font-semibold text-gray-900 mb-4">Información del Proveedor</h2>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Proveedor <span class="text-red-500">*</span>
+                        </label>
+                        <select [ngModel]="proveedorId()" (ngModelChange)="onProveedorChange($event)"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                            required>
+                            <option [ngValue]="null">Seleccione un proveedor</option>
+                            <option *ngFor="let proveedor of proveedores()" [ngValue]="proveedor.id">
+                                {{ proveedor.nombre }} - {{ proveedor.razon_social }}
+                            </option>
+                        </select>
+                    </div>
+
+                    @if (proveedorSeleccionado()) {
+                    <div class="md:col-span-2 p-4 bg-emerald-50 rounded-lg border border-emerald-200">
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                            <div>
+                                <p class="text-gray-600">Crédito</p>
+                                <p class="font-semibold text-gray-900">{{ proveedorSeleccionado()!.dias_credito }} días
+                                </p>
+                            </div>
+                            <div>
+                                <p class="text-gray-600">Descuento</p>
+                                <p class="font-semibold text-gray-900">{{ proveedorSeleccionado()!.descuento_habitual
+                                    }}%
+                                </p>
+                            </div>
+                            <div>
+                                <p class="text-gray-600">Mínimo</p>
+                                <p class="font-semibold text-gray-900">${{ proveedorSeleccionado()!.monto_minimo_compra
+                                    |
+                                    number: '1.2-2' }}</p>
+                            </div>
+                            <div>
+                                <p class="text-gray-600">Calificación</p>
+                                <p class="font-semibold text-gray-900">⭐ {{ proveedorSeleccionado()!.calificacion }}/5
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    }
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Fecha Estimada de Entrega</label>
+                        <input type="date" [(ngModel)]="fechaEstimadaEntrega"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500" />
+                    </div>
+                </div>
+            </div>
+
+            <!-- Productos -->
+            <div class="bg-white rounded-lg border border-gray-200 p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-lg font-semibold text-gray-900">Productos</h2>
+                    <button (click)="mostrarSugerencias.set(!mostrarSugerencias())"
+                        class="px-3 py-1.5 text-sm bg-emerald-50 text-emerald-700 rounded-lg hover:bg-emerald-100 transition-colors flex items-center gap-2">
+                        <lucide-icon name="alert-triangle" [size]="16"></lucide-icon>
+                        Ver Sugerencias ({{ productosBajoStock().length }})
+                    </button>
+                </div>
+
+                <!-- Sugerencias de Stock Bajo -->
+                @if (mostrarSugerencias()) {
+                <div class="mb-4 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                    <h3 class="text-sm font-semibold text-yellow-900 mb-3">Productos con Stock Bajo</h3>
+                    <div class="space-y-2 max-h-60 overflow-y-auto">
+                        @for (producto of productosBajoStock(); track producto.id) {
+                        <div class="flex items-center justify-between p-2 bg-white rounded border border-yellow-100">
+                            <div class="flex-1">
+                                <p class="font-medium text-gray-900">{{ producto.nombre_comercial }}</p>
+                                <p class="text-sm text-gray-600">
+                                    Stock: {{ producto.stock_actual }} / Mínimo: {{ producto.stock_minimo }}
+                                    <span class="text-red-600 font-semibold ml-2">
+                                        Faltante: {{ (producto.stock_minimo || 0) - (producto.stock_actual || 0) }}
+                                    </span>
+                                </p>
+                            </div>
+                            <button (click)="agregarProductoSugerido(producto)"
+                                class="ml-4 px-3 py-1 bg-emerald-600 text-white rounded hover:bg-emerald-700 text-sm">
+                                Agregar
+                            </button>
+                        </div>
+                        }
+                    </div>
+                </div>
+                }
+
+                <!-- Agregar Producto -->
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-3 mb-4 p-4 bg-gray-50 rounded-lg">
+                    <div class="md:col-span-5">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Producto</label>
+                        <select [ngModel]="productoSeleccionadoId()" (ngModelChange)="onProductoChange($event)"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 text-sm">
+                            <option [ngValue]="null">Seleccionar...</option>
+                            <option *ngFor="let producto of productos()" [ngValue]="producto.id">
+                                {{ producto.nombre_comercial }} ({{ producto.codigo_interno }})
+                            </option>
+                        </select>
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Cantidad</label>
+                        <input type="number" [(ngModel)]="cantidadAgregar" min="1"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 text-sm" />
+                    </div>
+                    <div class="md:col-span-3">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Precio Unitario</label>
+                        <input type="number" [(ngModel)]="precioUnitario" min="0" step="0.01"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 text-sm" />
+                    </div>
+                    <div class="md:col-span-2 flex items-end">
+                        <button (click)="agregarProducto()"
+                            class="w-full px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors flex items-center justify-center gap-2">
+                            <lucide-icon name="plus" [size]="18"></lucide-icon>
+                            Agregar
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Tabla de Productos -->
+                @if (items().length > 0) {
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="bg-gray-50 border-b border-gray-200">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Producto
+                                </th>
+                                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Cantidad
+                                </th>
+                                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Precio
+                                    Unit.</th>
+                                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Subtotal
+                                </th>
+                                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Acciones
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200">
+                            @for (item of items(); track $index) {
+                            <tr>
+                                <td class="px-4 py-3">
+                                    <p class="font-medium text-gray-900">{{ item.nombre_producto }}</p>
+                                    <p class="text-sm text-gray-500">{{ item.codigo_producto }}</p>
+                                </td>
+                                <td class="px-4 py-3">
+                                    <input type="number" [ngModel]="item.cantidad_solicitada"
+                                        (ngModelChange)="actualizarCantidad($index, $event)" min="1"
+                                        class="w-20 px-2 py-1 border border-gray-300 rounded text-center" />
+                                </td>
+                                <td class="px-4 py-3">
+                                    <input type="number" [ngModel]="item.precio_unitario"
+                                        (ngModelChange)="actualizarPrecio($index, $event)" min="0" step="0.01"
+                                        class="w-24 px-2 py-1 border border-gray-300 rounded text-right" />
+                                </td>
+                                <td class="px-4 py-3 text-right font-semibold text-gray-900">
+                                    ${{ item.subtotal | number: '1.2-2' }}
+                                </td>
+                                <td class="px-4 py-3 text-center">
+                                    <button (click)="eliminarItem($index)"
+                                        class="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50">
+                                        <lucide-icon name="trash-2" [size]="18"></lucide-icon>
+                                    </button>
+                                </td>
+                            </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                } @else {
+                <div class="text-center py-12 text-gray-500">
+                    <lucide-icon name="package-x" [size]="48" class="mx-auto mb-3 text-gray-400"></lucide-icon>
+                    <p>No hay productos agregados</p>
+                    <p class="text-sm mt-1">Selecciona productos para agregar a la orden</p>
+                </div>
+                }
+            </div>
+
+            <!-- Observaciones -->
+            <div class="bg-white rounded-lg border border-gray-200 p-6">
+                <h2 class="text-lg font-semibold text-gray-900 mb-4">Observaciones</h2>
+                <textarea [(ngModel)]="observaciones" rows="3" placeholder="Notas adicionales sobre la orden..."
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"></textarea>
+            </div>
+        </div>
+
+        <!-- Resumen -->
+        <div class="lg:col-span-1">
+            <div class="bg-white rounded-lg border border-gray-200 p-6 sticky top-6">
+                <h2 class="text-lg font-semibold text-gray-900 mb-4">Resumen</h2>
+
+                <!-- Descuento -->
+                <div class="mb-4 pb-4 border-b border-gray-200">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Descuento</label>
+                    <div class="flex gap-2 mb-2">
+                        <button (click)="descuentoTipo.set('percentage')"
+                            [class.bg-emerald-600]="descuentoTipo() === 'percentage'"
+                            [class.text-white]="descuentoTipo() === 'percentage'"
+                            [class.bg-gray-100]="descuentoTipo() !== 'percentage'"
+                            [class.text-gray-700]="descuentoTipo() !== 'percentage'"
+                            class="flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors">
+                            %
+                        </button>
+                        <button (click)="descuentoTipo.set('fixed')"
+                            [class.bg-emerald-600]="descuentoTipo() === 'fixed'"
+                            [class.text-white]="descuentoTipo() === 'fixed'"
+                            [class.bg-gray-100]="descuentoTipo() !== 'fixed'"
+                            [class.text-gray-700]="descuentoTipo() !== 'fixed'"
+                            class="flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors">
+                            $
+                        </button>
+                        <button (click)="descuentoTipo.set(null); descuentoValor.set(0)"
+                            [class.bg-red-600]="descuentoTipo() === null" [class.text-white]="descuentoTipo() === null"
+                            [class.bg-gray-100]="descuentoTipo() !== null"
+                            [class.text-gray-700]="descuentoTipo() !== null"
+                            class="flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors">
+                            Sin
+                        </button>
+                    </div>
+                    @if (descuentoTipo()) {
+                    <input type="number" [(ngModel)]="descuentoValor" min="0"
+                        [step]="descuentoTipo() === 'percentage' ? '1' : '0.01'"
+                        [max]="descuentoTipo() === 'percentage' ? '100' : subtotal()"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500" />
+                    }
+                </div>
+
+                <!-- Totales -->
+                <div class="space-y-3 mb-6">
+                    <div class="flex justify-between text-gray-700">
+                        <span>Subtotal:</span>
+                        <span class="font-semibold">${{ subtotal() | number: '1.2-2' }}</span>
+                    </div>
+                    @if (descuentoMonto() > 0) {
+                    <div class="flex justify-between text-emerald-600">
+                        <span>Descuento:</span>
+                        <span class="font-semibold">-${{ descuentoMonto() | number: '1.2-2' }}</span>
+                    </div>
+                    }
+                    <div class="pt-3 border-t border-gray-200 flex justify-between text-lg font-bold text-gray-900">
+                        <span>TOTAL:</span>
+                        <span>${{ total() | number: '1.2-2' }}</span>
+                    </div>
+                </div>
+
+                <!-- Botones de Acción -->
+                <div class="space-y-2">
+                    <button (click)="enviarOrden()" [disabled]="items().length === 0 || !proveedorId()"
+                        class="w-full px-4 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors font-medium flex items-center justify-center gap-2">
+                        <lucide-icon name="send" [size]="20"></lucide-icon>
+                        Enviar Orden
+                    </button>
+                    <button (click)="guardarBorrador()" [disabled]="items().length === 0 || !proveedorId()"
+                        class="w-full px-4 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors font-medium flex items-center justify-center gap-2">
+                        <lucide-icon name="file-text" [size]="20"></lucide-icon>
+                        Guardar Borrador
+                    </button>
+                    <button (click)="cancelar()"
+                        class="w-full px-4 py-3 bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium">
+                        Cancelar
+                    </button>
+                </div>
+
+                <!-- Info -->
+                <div class="mt-4 p-3 bg-blue-50 rounded-lg text-sm text-blue-800">
+                    <p class="font-medium mb-1">💡 Consejo</p>
+                    <p>Revisa las sugerencias de stock bajo para optimizar tu orden.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,137 @@
+<div class="space-y-6">
+  <div class="flex items-center justify-between gap-2">
+    <div class="flex flex-col gap-1">
+      <div class="flex items-center gap-2">
+        <lucide-icon name="user" class="w-5 h-5 text-emerald-600"></lucide-icon>
+        <h2 class="text-xl font-semibold tracking-tight text-gray-900">Gestión de Clientes</h2>
+      </div>
+      <p class="text-sm text-gray-600">Administra la información de tus clientes y su historial.</p>
+    </div>
+    <a routerLink="/clientes/nuevo"
+      class="flex items-center gap-2 bg-emerald-600 text-white hover:bg-emerald-700 transition-colors rounded-lg px-4 py-2 text-sm font-medium">
+      <lucide-icon name="plus" class="w-4 h-4"></lucide-icon>
+      Nuevo Cliente
+    </a>
+  </div>
+
+  <!-- Filtros -->
+  <div class="bg-white rounded-xl border border-gray-200 p-4">
+    <div class="flex flex-col md:flex-row gap-4">
+      <div class="flex-1">
+        <div class="relative">
+          <lucide-icon name="search"
+            class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400"></lucide-icon>
+          <input type="text" placeholder="Buscar por nombre, identificación o email..." [value]="terminoBusqueda()"
+            (input)="terminoBusqueda.set($any($event.target).value)"
+            class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white" />
+        </div>
+      </div>
+      <div class="flex gap-2">
+        <select [value]="tipoFiltro()" (change)="tipoFiltro.set($any($event.target).value)"
+          class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white">
+          <option value="todos">Todos los tipos</option>
+          <option value="Regular">Regular</option>
+          <option value="VIP">VIP</option>
+          <option value="Crédito">Crédito</option>
+        </select>
+        <select [value]="estadoFiltro()" (change)="estadoFiltro.set($any($event.target).value)"
+          class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white">
+          <option value="todos">Todos los estados</option>
+          <option value="activo">Activo</option>
+          <option value="inactivo">Inactivo</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Estadísticas rápidas -->
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+    <div class="bg-white rounded-xl border border-gray-200 p-4">
+      <div class="text-sm text-gray-600 mb-1">Total Clientes</div>
+      <div class="text-2xl font-bold text-gray-900">{{ getTotalClientes() }}</div>
+    </div>
+    <div class="bg-white rounded-xl border border-gray-200 p-4">
+      <div class="text-sm text-gray-600 mb-1">Clientes VIP</div>
+      <div class="text-2xl font-bold text-yellow-600">{{ getClientesVIP() }}</div>
+    </div>
+    <div class="bg-white rounded-xl border border-gray-200 p-4">
+      <div class="text-sm text-gray-600 mb-1">Con Crédito</div>
+      <div class="text-2xl font-bold text-green-600">{{ getClientesCredito() }}</div>
+    </div>
+    <div class="bg-white rounded-xl border border-gray-200 p-4">
+      <div class="text-sm text-gray-600 mb-1">Saldo Pendiente</div>
+      <div class="text-2xl font-bold text-red-600">${{ getSaldoPendienteTotal().toLocaleString() }}</div>
+    </div>
+  </div>
+
+  <!-- Tabla de Clientes -->
+  <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="bg-gray-50 border-b">
+          <tr>
+            <th class="text-left py-3 px-4 font-medium text-gray-700">Cliente</th>
+            <th class="text-left py-3 px-4 font-medium text-gray-700">Contacto</th>
+            <th class="text-left py-3 px-4 font-medium text-gray-700">Tipo</th>
+            <th class="text-right py-3 px-4 font-medium text-gray-700">Saldo</th>
+            <th class="text-center py-3 px-4 font-medium text-gray-700">Compras</th>
+            <th class="text-center py-3 px-4 font-medium text-gray-700">Puntos</th>
+            <th class="text-center py-3 px-4 font-medium text-gray-700">Estado</th>
+            <th class="text-center py-3 px-4 font-medium text-gray-700">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let cliente of clientesFiltrados()" class="border-b hover:bg-gray-50">
+            <td class="py-3 px-4">
+              <div class="font-medium text-gray-900">{{ cliente.nombre_completo }}</div>
+              <div class="text-xs text-gray-500">ID: {{ cliente.identificacion }}</div>
+            </td>
+            <td class="py-3 px-4">
+              <div class="text-sm text-gray-600">{{ cliente.telefono }}</div>
+              <div class="text-xs text-gray-500">{{ cliente.email }}</div>
+            </td>
+            <td class="py-3 px-4">
+              <span [class]="'px-2 py-1 rounded text-xs font-medium border ' + getTipoClass(cliente.tipo || '')">
+                {{ cliente.tipo }}
+              </span>
+            </td>
+            <td class="py-3 px-4 text-right">
+              <span [class]="(cliente.saldo_pendiente || 0) > 0 ? 'text-red-600 font-medium' : 'text-gray-600'">
+                ${{ (cliente.saldo_pendiente || 0).toLocaleString() }}
+              </span>
+            </td>
+            <td class="py-3 px-4 text-center text-sm text-gray-600">{{ cliente.compras }}</td>
+            <td class="py-3 px-4 text-center">
+              <span class="text-blue-600 font-medium">{{ cliente.puntos }}</span>
+            </td>
+            <td class="py-3 px-4 text-center">
+              <span [class]="'px-2 py-1 rounded text-xs font-medium border ' + getEstadoClass(cliente.estado || '')">
+                {{ cliente.estado === 'activo' ? 'Activo' : 'Inactivo' }}
+              </span>
+            </td>
+            <td class="py-3 px-4">
+              <div class="flex justify-center gap-1">
+                <a [routerLink]="['/clientes', cliente.id]" class="p-1 text-blue-600 hover:text-blue-800"
+                  title="Ver ficha">
+                  <lucide-icon name="eye" class="w-4 h-4"></lucide-icon>
+                </a>
+                <a [routerLink]="['/clientes', cliente.id, 'editar']"
+                  class="p-1 text-emerald-600 hover:text-emerald-800" title="Editar">
+                  <lucide-icon name="edit" class="w-4 h-4"></lucide-icon>
+                </a>
+                <button (click)="eliminarCliente(cliente)" class="p-1 text-red-600 hover:text-red-800" title="Eliminar">
+                  <lucide-icon name="trash-2" class="w-4 h-4"></lucide-icon>
+                </button>
+              </div>
+            </td>
+          </tr>
+          <tr *ngIf="clientesFiltrados().length === 0">
+            <td colspan="8" class="py-8 text-center text-gray-500">
+              No se encontraron clientes
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

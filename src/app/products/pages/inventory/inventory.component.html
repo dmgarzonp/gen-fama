@@ -1,0 +1,159 @@
+<div class="space-y-6">
+  <div class="flex items-center justify-between gap-2">
+    <div class="flex flex-col gap-1">
+      <div class="flex items-center gap-2">
+        <lucide-icon name="package" class="w-5 h-5 text-emerald-600"></lucide-icon>
+        <h2 class="text-xl font-semibold tracking-tight text-gray-900">Inventario</h2>
+      </div>
+      <p class="text-sm text-gray-600">Gestiona los productos, stock y precios de la farmacia.</p>
+    </div>
+  </div>
+
+  <!-- Filtros y Búsqueda -->
+  <div class="bg-white rounded-xl border border-gray-200 p-4">
+    <div class="flex flex-col lg:flex-row gap-4">
+      <div class="flex-1">
+        <input type="text" placeholder="Buscar por nombre, código de barras o principio activo..."
+          [(ngModel)]="terminoBusqueda" (input)="filtrarProductos()"
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white" />
+      </div>
+      <div class="flex gap-2">
+        <select [(ngModel)]="filtroCategoria" (change)="filtrarProductos()"
+          class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white">
+          <option value="">Todas las categorías</option>
+          <option *ngFor="let cat of categorias" [value]="cat">{{ cat }}</option>
+        </select>
+        <select [(ngModel)]="filtroEstado" (change)="filtrarProductos()"
+          class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white">
+          <option value="">Todos los estados</option>
+          <option value="activo">Activos</option>
+          <option value="inactivo">Inactivos</option>
+        </select>
+        <button
+          class="flex items-center gap-2 bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors rounded-lg px-4 py-2 text-sm font-medium">
+          <lucide-icon name="filter" class="w-4 h-4"></lucide-icon>
+          Filtros
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Acciones Rápidas -->
+  <div class="flex flex-wrap gap-2">
+    <button (click)="mostrarFormularioProducto()"
+      class="flex items-center gap-2 bg-emerald-600 text-white hover:bg-emerald-700 transition-colors rounded-lg px-4 py-2 text-sm font-medium">
+      <lucide-icon name="plus" class="w-4 h-4"></lucide-icon>
+      Nuevo Producto
+    </button>
+    <button
+      class="flex items-center gap-2 bg-blue-600 text-white hover:bg-blue-700 transition-colors rounded-lg px-4 py-2 text-sm font-medium">
+      <lucide-icon name="upload" class="w-4 h-4"></lucide-icon>
+      Importar Excel
+    </button>
+    <button
+      class="flex items-center gap-2 bg-gray-600 text-white hover:bg-gray-700 transition-colors rounded-lg px-4 py-2 text-sm font-medium">
+      <lucide-icon name="download" class="w-4 h-4"></lucide-icon>
+      Exportar Excel
+    </button>
+    <button
+      class="flex items-center gap-2 bg-purple-600 text-white hover:bg-purple-700 transition-colors rounded-lg px-4 py-2 text-sm font-medium">
+      <lucide-icon name="barcode" class="w-4 h-4"></lucide-icon>
+      Imprimir Etiquetas
+    </button>
+  </div>
+
+  <!-- Tabla de Productos -->
+  <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="bg-gray-50 border-b">
+          <tr>
+            <th class="text-left py-3 px-4 font-medium text-gray-700">Código</th>
+            <th class="text-left py-3 px-4 font-medium text-gray-700">Producto</th>
+            <th class="text-left py-3 px-4 font-medium text-gray-700">Principio Activo</th>
+            <th class="text-left py-3 px-4 font-medium text-gray-700">Presentación</th>
+            <th class="text-left py-3 px-4 font-medium text-gray-700">Categoría</th>
+            <th class="text-center py-3 px-4 font-medium text-gray-700">Stock</th>
+            <th class="text-right py-3 px-4 font-medium text-gray-700">Precio Venta</th>
+            <th class="text-center py-3 px-4 font-medium text-gray-700">Control</th>
+            <th class="text-center py-3 px-4 font-medium text-gray-700">Estado</th>
+            <th class="text-center py-3 px-4 font-medium text-gray-700">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let producto of productosFiltrados" class="border-b hover:bg-gray-50">
+            <td class="py-3 px-4">
+              <div class="space-y-1">
+                <div class="text-xs text-gray-500">{{ producto.codigo_barras }}</div>
+                <div class="text-xs font-medium">{{ producto.codigo_interno }}</div>
+              </div>
+            </td>
+            <td class="py-3 px-4">
+              <div class="space-y-1">
+                <div class="font-medium text-gray-900">{{ producto.nombre_comercial }}</div>
+                <div class="text-xs text-gray-500">{{ producto.laboratorio }}</div>
+              </div>
+            </td>
+            <td class="py-3 px-4 text-xs text-gray-600">{{ producto.principio_activo }}</td>
+            <td class="py-3 px-4 text-xs text-gray-600">{{ producto.presentacion }}</td>
+            <td class="py-3 px-4">
+              <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-medium">
+                {{ producto.categoria || 'Sin categoría' }}
+              </span>
+            </td>
+            <td class="py-3 px-4 text-center">
+              <div [class]="getStockClass(producto)">
+                {{ producto.stock_actual }}
+              </div>
+              <div class="text-xs text-gray-500">Min: {{ producto.stock_minimo }}</div>
+            </td>
+            <td class="py-3 px-4 text-right font-medium">${{ producto.precio_venta.toFixed(2) }}</td>
+            <td class="py-3 px-4 text-center">
+              <div class="flex justify-center gap-1">
+                <span *ngIf="producto.requiere_receta"
+                  class="px-2 py-1 bg-orange-100 text-orange-800 rounded text-xs font-medium">Receta</span>
+                <span *ngIf="producto.es_controlado"
+                  class="px-2 py-1 bg-red-100 text-red-800 rounded text-xs font-medium">Control</span>
+              </div>
+            </td>
+            <td class="py-3 px-4 text-center">
+              <span [class]="'px-2 py-1 rounded text-xs font-medium ' + 
+                (producto.estado === 'activo' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800')">
+                {{ producto.estado === 'activo' ? 'Activo' : 'Inactivo' }}
+              </span>
+            </td>
+            <td class="py-3 px-4">
+              <div class="flex justify-center gap-1">
+                <button (click)="verProducto(producto)" class="p-1 text-blue-600 hover:text-blue-800">
+                  <lucide-icon name="eye" class="w-4 h-4"></lucide-icon>
+                </button>
+                <button (click)="editarProducto(producto)" class="p-1 text-gray-600 hover:text-gray-800">
+                  <lucide-icon name="edit" class="w-4 h-4"></lucide-icon>
+                </button>
+                <button (click)="ajustarInventario(producto)" class="p-1 text-purple-600 hover:text-purple-800">
+                  <lucide-icon name="calculator" class="w-4 h-4"></lucide-icon>
+                </button>
+                <button (click)="eliminarProducto(producto)" class="p-1 text-red-600 hover:text-red-800">
+                  <lucide-icon name="trash2" class="w-4 h-4"></lucide-icon>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Paginación -->
+  <div class="flex items-center justify-between">
+    <div class="text-sm text-gray-600">
+      Mostrando {{ productosFiltrados.length }} de {{ productos.length }} productos
+    </div>
+    <div class="flex gap-2">
+      <button class="px-3 py-1 border border-gray-300 rounded text-sm hover:bg-gray-50">Anterior</button>
+      <button class="px-3 py-1 bg-emerald-600 text-white rounded text-sm">1</button>
+      <button class="px-3 py-1 border border-gray-300 rounded text-sm hover:bg-gray-50">2</button>
+      <button class="px-3 py-1 border border-gray-300 rounded text-sm hover:bg-gray-50">Siguiente</button>
+    </div>
+  </div>
+</div>

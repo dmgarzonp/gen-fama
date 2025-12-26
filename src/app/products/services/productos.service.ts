@@ -12,16 +12,32 @@ export class ProductosService {
     this.cargarProductos();
   }
 
-  async cargarProductos() {
+  async cargarProductos(estado?: string) {
     try {
-      const sql = `
-        SELECT p.*, c.nombre as categoria_nombre 
+      let sql = `
+        SELECT p.*, c.nombre as categoria 
         FROM productos p 
         LEFT JOIN categorias c ON p.categoria_id = c.id 
-        WHERE p.estado = 'activo'
       `;
-      const results = await this.db.query<Producto>(sql);
-      this._productos.set(results);
+      const params: any[] = [];
+      
+      if (estado) {
+        sql += ` WHERE p.estado = ?`;
+        params.push(estado);
+      } else {
+        // Por defecto, cargar todos (activos e inactivos)
+        sql += ` WHERE 1=1`;
+      }
+      
+      const results = await this.db.query<any>(sql, params);
+      // Mapear categoria_nombre a categoria y convertir booleanos
+      const productos: Producto[] = results.map((r: any) => ({
+        ...r,
+        categoria: r.categoria || null,
+        requiere_receta: r.requiere_receta === 1 || r.requiere_receta === true,
+        es_controlado: r.es_controlado === 1 || r.es_controlado === true,
+      }));
+      this._productos.set(productos);
     } catch (error) {
       console.error('Error al cargar productos:', error);
     }
@@ -33,7 +49,7 @@ export class ProductosService {
     return results[0];
   }
 
-  async upsert(producto: Producto) {
+  async upsert(producto: Producto): Promise<void> {
     if (producto.id) {
       // Update
       const sql = `
@@ -79,12 +95,12 @@ export class ProductosService {
     await this.cargarProductos(); // Recargar lista
   }
 
-  async delete(id: number) {
+  async delete(id: number): Promise<void> {
     await this.db.execute("UPDATE productos SET estado = 'inactivo' WHERE id = ?", [id]);
     await this.cargarProductos();
   }
 
-  async actualizarStock(productoId: number, cantidad: number, operacion: 'suma' | 'resta') {
+  async actualizarStock(productoId: number, cantidad: number, operacion: 'suma' | 'resta'): Promise<void> {
     const sign = operacion === 'suma' ? '+' : '-';
     const sql = `UPDATE productos SET stock_actual = MAX(0, stock_actual ${sign} ?) WHERE id = ?`;
     await this.db.execute(sql, [cantidad, productoId]);

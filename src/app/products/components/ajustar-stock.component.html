@@ -1,1 +1,152 @@
+<div *ngIf="mostrar" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 animate-fade-in"
+  (click)="cerrarModal()">
+  <div class="bg-white rounded-xl shadow-2xl max-w-md w-full animate-slide-up"
+    (click)="$event.stopPropagation()">
+    <!-- Header -->
+    <div class="border-b border-gray-200 px-6 py-4 bg-gradient-to-r from-purple-50 to-blue-50">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="p-2 bg-purple-100 rounded-lg">
+            <lucide-icon name="calculator" class="w-5 h-5 text-purple-600"></lucide-icon>
+          </div>
+          <div>
+            <h3 class="text-lg font-semibold text-gray-900">Ajustar Inventario</h3>
+            <p class="text-sm text-gray-600">{{ producto?.nombre_comercial }}</p>
+          </div>
+        </div>
+        <button (click)="cerrarModal()" 
+          class="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+          <lucide-icon name="x" class="w-5 h-5 text-gray-500"></lucide-icon>
+        </button>
+      </div>
+    </div>
 
+    <!-- Content -->
+    <div class="p-6 space-y-6">
+      <!-- Información del Stock Actual -->
+      <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="text-xs font-medium text-gray-500 uppercase">Stock Actual</label>
+            <div [class]="'text-2xl font-bold mt-1 ' + getStockClass(producto?.stock_actual || 0)">
+              {{ producto?.stock_actual || 0 }}
+            </div>
+          </div>
+          <div>
+            <label class="text-xs font-medium text-gray-500 uppercase">Stock Mínimo</label>
+            <div class="text-2xl font-semibold text-gray-700 mt-1">
+              {{ producto?.stock_minimo || 0 }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tipo de Ajuste -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-3">Tipo de Ajuste</label>
+        <div class="grid grid-cols-3 gap-2">
+          <button 
+            (click)="tipoAjuste = 'suma'"
+            [class]="'px-4 py-3 rounded-lg border-2 transition-all ' + 
+              (tipoAjuste === 'suma' 
+                ? 'border-emerald-500 bg-emerald-50 text-emerald-700 font-medium' 
+                : 'border-gray-200 hover:border-gray-300 text-gray-700')">
+            <lucide-icon name="plus" class="w-4 h-4 mx-auto mb-1"></lucide-icon>
+            <div class="text-xs">Sumar</div>
+          </button>
+          <button 
+            (click)="tipoAjuste = 'resta'"
+            [class]="'px-4 py-3 rounded-lg border-2 transition-all ' + 
+              (tipoAjuste === 'resta' 
+                ? 'border-red-500 bg-red-50 text-red-700 font-medium' 
+                : 'border-gray-200 hover:border-gray-300 text-gray-700')">
+            <lucide-icon name="minus" class="w-4 h-4 mx-auto mb-1"></lucide-icon>
+            <div class="text-xs">Restar</div>
+          </button>
+          <button 
+            (click)="tipoAjuste = 'fijo'"
+            [class]="'px-4 py-3 rounded-lg border-2 transition-all ' + 
+              (tipoAjuste === 'fijo' 
+                ? 'border-blue-500 bg-blue-50 text-blue-700 font-medium' 
+                : 'border-gray-200 hover:border-gray-300 text-gray-700')">
+            <lucide-icon name="equal" class="w-4 h-4 mx-auto mb-1"></lucide-icon>
+            <div class="text-xs">Fijar</div>
+          </button>
+        </div>
+      </div>
+
+      <!-- Cantidad -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">
+          Cantidad {{ tipoAjuste === 'fijo' ? 'Nueva' : 'a ' + (tipoAjuste === 'suma' ? 'Sumar' : 'Restar') }}
+        </label>
+        <input 
+          type="number" 
+          [(ngModel)]="cantidad"
+          min="0"
+          step="1"
+          class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-lg font-semibold"
+          placeholder="0" />
+      </div>
+
+      <!-- Stock Resultante -->
+      <div *ngIf="cantidad > 0" class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div class="flex items-center justify-between">
+          <span class="text-sm font-medium text-blue-900">Stock Resultante:</span>
+          <span [class]="'text-xl font-bold ' + getStockClass(calcularNuevoStock())">
+            {{ calcularNuevoStock() }}
+          </span>
+        </div>
+        <div *ngIf="calcularNuevoStock() < (producto?.stock_minimo || 0)" 
+          class="mt-2 flex items-center gap-2 text-sm text-red-600">
+          <lucide-icon name="alert-triangle" class="w-4 h-4"></lucide-icon>
+          <span>El stock quedará por debajo del mínimo</span>
+        </div>
+      </div>
+
+      <!-- Motivo -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">Motivo *</label>
+        <select 
+          [(ngModel)]="motivo"
+          class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+          <option value="">Seleccionar motivo</option>
+          <option value="entrada">Entrada de mercancía</option>
+          <option value="salida">Salida de mercancía</option>
+          <option value="devolucion">Devolución de cliente</option>
+          <option value="perdida">Pérdida o daño</option>
+          <option value="conteo">Ajuste por conteo físico</option>
+          <option value="vencimiento">Vencimiento</option>
+          <option value="otro">Otro</option>
+        </select>
+      </div>
+
+      <!-- Observaciones -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">Observaciones</label>
+        <textarea 
+          [(ngModel)]="observaciones"
+          rows="3"
+          class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
+          placeholder="Notas adicionales sobre el ajuste..."></textarea>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="border-t border-gray-200 px-6 py-4 bg-gray-50">
+      <div class="flex items-center justify-end gap-3">
+        <button 
+          (click)="cerrarModal()"
+          class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium">
+          Cancelar
+        </button>
+        <button 
+          (click)="guardarAjuste()"
+          class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium flex items-center gap-2">
+          <lucide-icon name="check" class="w-4 h-4"></lucide-icon>
+          Aplicar Ajuste
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,1 +1,207 @@
+<div *ngIf="mostrar" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 animate-fade-in"
+  (click)="cerrarModal()">
+  <div class="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden animate-slide-up"
+    (click)="$event.stopPropagation()">
+    <!-- Header -->
+    <div class="border-b border-gray-200 px-6 py-4 bg-gradient-to-r from-blue-50 to-indigo-50">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="p-2 bg-blue-100 rounded-lg">
+            <lucide-icon name="package" class="w-6 h-6 text-blue-600"></lucide-icon>
+          </div>
+          <div>
+            <h3 class="text-xl font-semibold text-gray-900">{{ producto?.nombre_comercial }}</h3>
+            <p class="text-sm text-gray-600">{{ producto?.codigo_interno }} • {{ producto?.categoria || 'Sin categoría' }}</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <button 
+            (click)="editarProducto()"
+            class="p-2 hover:bg-blue-100 rounded-lg transition-colors text-blue-600"
+            title="Editar producto">
+            <lucide-icon name="edit" class="w-5 h-5"></lucide-icon>
+          </button>
+          <button 
+            (click)="cerrarModal()" 
+            class="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+            <lucide-icon name="x" class="w-5 h-5 text-gray-500"></lucide-icon>
+          </button>
+        </div>
+      </div>
+    </div>
 
+    <!-- Content -->
+    <div class="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Información General -->
+        <div class="space-y-4">
+          <div>
+            <h4 class="text-sm font-semibold text-gray-500 uppercase mb-3 flex items-center gap-2">
+              <lucide-icon name="info" class="w-4 h-4"></lucide-icon>
+              Información General
+            </h4>
+            <div class="bg-gray-50 rounded-lg p-4 space-y-3">
+              <div>
+                <label class="text-xs font-medium text-gray-500">Código de Barras</label>
+                <div class="text-sm font-mono text-gray-900 mt-1">{{ producto?.codigo_barras || 'N/A' }}</div>
+              </div>
+              <div>
+                <label class="text-xs font-medium text-gray-500">Código Interno</label>
+                <div class="text-sm font-semibold text-gray-900 mt-1">{{ producto?.codigo_interno || 'N/A' }}</div>
+              </div>
+              <div>
+                <label class="text-xs font-medium text-gray-500">Principio Activo</label>
+                <div class="text-sm text-gray-900 mt-1">{{ producto?.principio_activo || 'N/A' }}</div>
+              </div>
+              <div>
+                <label class="text-xs font-medium text-gray-500">Presentación</label>
+                <div class="text-sm text-gray-900 mt-1">{{ producto?.presentacion || 'N/A' }}</div>
+              </div>
+              <div>
+                <label class="text-xs font-medium text-gray-500">Laboratorio</label>
+                <div class="text-sm text-gray-900 mt-1">{{ producto?.laboratorio || 'N/A' }}</div>
+              </div>
+              <div>
+                <label class="text-xs font-medium text-gray-500">Lote</label>
+                <div class="text-sm text-gray-900 mt-1">{{ producto?.lote || 'N/A' }}</div>
+              </div>
+              <div>
+                <label class="text-xs font-medium text-gray-500">Ubicación</label>
+                <div class="text-sm text-gray-900 mt-1">{{ producto?.ubicacion || 'N/A' }}</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Fechas -->
+          <div>
+            <h4 class="text-sm font-semibold text-gray-500 uppercase mb-3 flex items-center gap-2">
+              <lucide-icon name="calendar" class="w-4 h-4"></lucide-icon>
+              Fechas
+            </h4>
+            <div class="bg-gray-50 rounded-lg p-4 space-y-3">
+              <div>
+                <label class="text-xs font-medium text-gray-500">Fecha de Vencimiento</label>
+                <div class="text-sm text-gray-900 mt-1">
+                  {{ producto?.fecha_vencimiento || 'N/A' }}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Inventario y Precios -->
+        <div class="space-y-4">
+          <!-- Stock -->
+          <div>
+            <h4 class="text-sm font-semibold text-gray-500 uppercase mb-3 flex items-center gap-2">
+              <lucide-icon name="package-search" class="w-4 h-4"></lucide-icon>
+              Inventario
+            </h4>
+            <div class="bg-gray-50 rounded-lg p-4 space-y-3">
+              <div class="grid grid-cols-3 gap-3">
+                <div>
+                  <label class="text-xs font-medium text-gray-500">Stock Actual</label>
+                  <div [class]="'text-lg font-bold mt-1 px-2 py-1 rounded border ' + 
+                    getStockClass(producto?.stock_actual || 0, producto?.stock_minimo || 0)">
+                    {{ producto?.stock_actual || 0 }}
+                  </div>
+                </div>
+                <div>
+                  <label class="text-xs font-medium text-gray-500">Stock Mínimo</label>
+                  <div class="text-lg font-semibold text-gray-700 mt-1 px-2 py-1 rounded border border-gray-200">
+                    {{ producto?.stock_minimo || 0 }}
+                  </div>
+                </div>
+                <div>
+                  <label class="text-xs font-medium text-gray-500">Stock Máximo</label>
+                  <div class="text-lg font-semibold text-gray-700 mt-1 px-2 py-1 rounded border border-gray-200">
+                    {{ producto?.stock_maximo || 0 }}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Precios -->
+          <div>
+            <h4 class="text-sm font-semibold text-gray-500 uppercase mb-3 flex items-center gap-2">
+              <lucide-icon name="dollar-sign" class="w-4 h-4"></lucide-icon>
+              Precios
+            </h4>
+            <div class="bg-gray-50 rounded-lg p-4 space-y-3">
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="text-xs font-medium text-gray-500">Precio de Compra</label>
+                  <div class="text-lg font-semibold text-gray-900 mt-1">
+                    ${{ (producto?.precio_compra || 0).toFixed(2) }}
+                  </div>
+                </div>
+                <div>
+                  <label class="text-xs font-medium text-gray-500">Precio de Venta</label>
+                  <div class="text-lg font-semibold text-emerald-600 mt-1">
+                    ${{ (producto?.precio_venta || 0).toFixed(2) }}
+                  </div>
+                </div>
+              </div>
+              <div>
+                <label class="text-xs font-medium text-gray-500">Margen de Ganancia</label>
+                <div class="text-lg font-bold text-blue-600 mt-1">
+                  {{ (producto?.margen_ganancia || 0).toFixed(1) }}%
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Estado y Control -->
+          <div>
+            <h4 class="text-sm font-semibold text-gray-500 uppercase mb-3 flex items-center gap-2">
+              <lucide-icon name="shield" class="w-4 h-4"></lucide-icon>
+              Estado y Control
+            </h4>
+            <div class="bg-gray-50 rounded-lg p-4 space-y-3">
+              <div>
+                <label class="text-xs font-medium text-gray-500">Estado</label>
+                <div class="mt-1">
+                  <span [class]="'px-3 py-1 rounded-full text-xs font-medium border ' + getEstadoClass(producto?.estado || '')">
+                    {{ producto?.estado === 'activo' ? 'Activo' : 'Inactivo' }}
+                  </span>
+                </div>
+              </div>
+              <div class="flex gap-2">
+                <span *ngIf="producto?.requiere_receta" 
+                  class="px-3 py-1 bg-orange-100 text-orange-800 rounded-full text-xs font-medium border border-orange-200">
+                  Requiere Receta
+                </span>
+                <span *ngIf="producto?.es_controlado" 
+                  class="px-3 py-1 bg-red-100 text-red-800 rounded-full text-xs font-medium border border-red-200">
+                  Medicamento Controlado
+                </span>
+                <span *ngIf="!producto?.requiere_receta && !producto?.es_controlado" 
+                  class="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-medium border border-gray-200">
+                  Sin restricciones
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="border-t border-gray-200 px-6 py-4 bg-gray-50">
+      <div class="flex items-center justify-end gap-3">
+        <button 
+          (click)="cerrarModal()"
+          class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium">
+          Cerrar
+        </button>
+        <button 
+          (click)="editarProducto()"
+          class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center gap-2">
+          <lucide-icon name="edit" class="w-4 h-4"></lucide-icon>
+          Editar Producto
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

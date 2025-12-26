@@ -58,6 +58,11 @@ function runAutoBackup(dbPath: string) {
   }
 }
 
+// Deshabilitar aceleración de hardware de video (VAAPI) para evitar errores en Linux
+// Esto es seguro para aplicaciones que no requieren reproducción de video
+// y no afecta el rendimiento general de la aplicación
+app.commandLine.appendSwitch('disable-accelerated-video-decode');
+
 app.whenReady().then(() => {
   initDb();
   createWindow();
